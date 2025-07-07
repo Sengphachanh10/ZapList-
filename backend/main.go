@@ -40,6 +40,7 @@ func main() {
 	auth := api.Group("/auth")
 	auth.Post("/register", handlers.Register)
 	auth.Post("/login", handlers.Login)
+	auth.Post("/reset-password", handlers.ResetPassword)
 	auth.Get("/profile", middleware.AuthMiddleware, handlers.GetProfile)
 
 	// Todo routes

@@ -196,17 +196,25 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/auth/update-password'),
+        Uri.parse('$baseUrl/api/auth/reset-password'),
         headers: await _getHeaders(),
         body: json.encode({
           'email': email,
           'new_password': newPassword,
         }),
       );
-      return _handleResponse<String>(
-        response,
-        (data) => data['message'] ?? 'Password updated successfully',
-      );
+      // Try to parse as JSON, but if it fails, return a generic error
+      try {
+        return _handleResponse<String>(
+          response,
+          (data) => data['message'] ?? 'Password updated successfully',
+        );
+      } catch (e) {
+        return ApiResponse.error(
+          error: 'Unexpected response from server: ${response.body}',
+          statusCode: response.statusCode,
+        );
+      }
     } catch (e) {
       return ApiResponse.error(error: 'Network error: $e');
     }

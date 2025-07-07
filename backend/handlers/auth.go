@@ -158,3 +158,47 @@ func GetProfile(c *fiber.Ctx) error {
 		},
 	})
 }
+
+func ResetPassword(c *fiber.Ctx) error {
+	var req models.ResetPasswordRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	// Find user by email
+	var user models.User
+	err := database.DB.Collection("users").FindOne(context.Background(), bson.M{"email": req.Email}).Decode(&user)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to hash password",
+		})
+	}
+
+	// Update password in database
+	update := bson.M{
+		"$set": bson.M{
+			"password":   string(hashedPassword),
+			"updated_at": time.Now(),
+		},
+	}
+	_, err = database.DB.Collection("users").UpdateOne(context.Background(), bson.M{"email": req.Email}, update)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to update password",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Password reset successful",
+	})
+}
